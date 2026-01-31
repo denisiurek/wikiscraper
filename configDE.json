@@ -1,0 +1,10 @@
+{
+  "wiki_url": "https://de.stardewvalleywiki.com",
+  "request_timeout": 10,
+  "user_agent": "WikiScraper/1.0",
+  "accept-language": "de-DE,de;q=0.9",
+  "word_freq_lang": "de",
+  "json_path": "./word-counts.json",
+  "mode": "stardew_normal",
+  "is_debug": 0
+}

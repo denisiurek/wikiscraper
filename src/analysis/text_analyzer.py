@@ -94,4 +94,3 @@ class TextAnalyzer:
         plt.savefig(chart_path, dpi=600)
         plt.close()
         print(f"Chart saved to {chart_path}")
-

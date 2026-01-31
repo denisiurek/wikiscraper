@@ -90,10 +90,10 @@ class StardewScraper(WikiScraper):
         if not content_div:
             return []
 
-        blocked_namespaces = { # ai generated blockers
+        blocked_namespaces = {  # ai generated blockers
             'file', 'image', 'category', 'special', 'help', 'talk', 'user', 'user talk',
             'template', 'template talk', 'mediawiki', 'mediawiki talk', 'module', 'module talk',
-            'portal', 'draft', 'timedtext', 'mailto', 'tel', 'javascript'
+            'portal', 'draft', 'timedtext', 'mailto', 'tel', 'javascript', 'Datei'
         }
 
         seen: set[str] = set()
@@ -105,7 +105,7 @@ class StardewScraper(WikiScraper):
                 continue
 
             href_lower = href.lower()
-            if href_lower.startswith(('#', '/#', '/wiki/#', '//')):
+            if href_lower.startswith(('#', '/#', '/wiki/#', '//', '/datei')):
                 continue
 
             href = href.split('#', 1)[0].split('?', 1)[0]

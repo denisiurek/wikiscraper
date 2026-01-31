@@ -45,4 +45,3 @@ class WikiScraper(ABC):
     def fetch_page_redirections(self, url: str) -> list[str]:
 
         pass
-
