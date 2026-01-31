@@ -54,6 +54,8 @@ class StardewScraper(WikiScraper):
 
         return dfs
 
+    # def extract_all_words(self, html_content: str) -> pd.DataFrame:
+    #
     def fetch_page_redirections(self, url: str) -> list[str]:
         pass
 

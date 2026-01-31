@@ -18,7 +18,7 @@ class ConfigLoader:
             "user_agent": "WikiScraper/1.0",
             "accept-language": "en-US,en;q=0.9",
             "mode": "stardew_normal",
-            "is_debug": False
+            "is_debug": 0
         }
 
     def _load(self) -> dict:
@@ -52,6 +52,10 @@ class ConfigLoader:
     def headers(self) -> dict:
         return {"User-Agent": self.config.get("user_agent"),
                 "Accept-Language": self.config.get("accept_language")}
+
+    @property
+    def is_debug(self) -> bool:
+        return self.config.get("is_debug")
 
     @property
     def mode(self) -> str:

@@ -3,6 +3,7 @@ import sys
 
 from scraper import StardewScraper
 from scraper import get_scraper_tool
+from analysis import TextAnalyzer
 from utils import ConfigLoader
 
 #from scraper.stardew import StardewScraper
@@ -113,7 +114,7 @@ def main():
 
             tables = scraper.extract_tables(scraper.fetch_page(args.table))
 
-            if args.number > tables.size:
+            if args.number > len(tables):
                 raise ValueError("Table number exceeds number of tables.")
 
             table = tables[args.number - 1]
@@ -121,6 +122,7 @@ def main():
 
             print(f"Table saved to {args.table}_{args.number}.csv")
 
+            print(TextAnalyzer.sum_word_occurences(table))
 
         except Exception as e:
             print(f"Error processing table: {e}")
