@@ -1,3 +1,5 @@
 {
-    "wiki_url": "https://stardewvalleywiki.com"
+  "wiki_url": "https://stardewvalleywiki.com",
+  "request_timeout": 10,
+  "user_agent": "WikiScraper/1.0"
 }
