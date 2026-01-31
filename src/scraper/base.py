@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+
+import pandas as pd
 import requests
 
 class WikiScraper(ABC):
@@ -29,7 +31,9 @@ class WikiScraper(ABC):
     def parse_summary(self, html_content: str) -> str:
 
         pass
-
+    @abstractmethod
+    def extract_all_words(self, html_content: str) -> pd.DataFrame:
+        pass
     @abstractmethod
     def extract_tables(self, html_content: str) -> list:
 

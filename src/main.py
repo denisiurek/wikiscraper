@@ -1,5 +1,8 @@
 import argparse
+import os
 import sys
+
+import pandas as pd
 
 from scraper import StardewScraper
 from scraper import get_scraper_tool
@@ -9,9 +12,8 @@ from utils import ConfigLoader
 #from scraper.stardew import StardewScraper
 #from analysis.text_analyzer import TextAnalyzer
 
+def setup_parser() -> argparse.ArgumentParser:
 
-
-def main():
     parser = argparse.ArgumentParser(
         description="WikiScraper: A tool to scrape and analyze wiki contents, specifically Stardew Valley Wiki."
     )
@@ -95,6 +97,19 @@ def main():
         default=1,
         help="For --auto-count-words: Delay in seconds between fetches (default: 1)."
     )
+    return parser
+def update_word_counts_json(word_counts: pd.DataFrame, file_name: str):
+    if os.path.exists(file_name):
+        word_counts = pd.concat([pd.read_json(file_name), word_counts])
+        word_counts = word_counts.groupby('Phrase', as_index=False).sum()
+        word_counts.to_json(file_name, orient="records")
+    else:
+        word_counts.to_json(file_name, orient="records")
+    return
+
+
+def main():
+    parser = setup_parser()
 
     config = ConfigLoader()
 
@@ -131,7 +146,10 @@ def main():
 
     elif args.count_words:
         try:
-            raise NotImplementedError("counting not implemented")
+            words = scraper.extract_all_words(scraper.fetch_page(args.count_words))
+            word_counts = TextAnalyzer.sum_word_occurences(words)
+            update_word_counts_json(word_counts, "word-counts.json")
+            print(f"Word counts updated in word-counts.json")
 
         except Exception as e:
             print(f"Error counting words: {e}")

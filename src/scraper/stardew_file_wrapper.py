@@ -22,6 +22,8 @@ class StardewFileScraper(WikiScraper):
     def parse_summary(self, html_content: str) -> str:
         return self.scraper.parse_summary(html_content)
 
+    def extract_all_words(self, html_content: str) -> pd.DataFrame:
+        return self.scraper.extract_all_words(html_content)
 
     def extract_tables(self, html_content: str) -> list[pd.DataFrame]:
         return self.scraper.extract_tables(html_content)

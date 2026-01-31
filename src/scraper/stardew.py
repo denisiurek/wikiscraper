@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 import pandas as pd
 from io import StringIO
 import re
+from string import punctuation
 
 class StardewScraper(WikiScraper):
     def __init__(self, config):
@@ -54,8 +55,32 @@ class StardewScraper(WikiScraper):
 
         return dfs
 
-    # def extract_all_words(self, html_content: str) -> pd.DataFrame:
-    #
+    def extract_all_words(self, html_content: str) -> pd.DataFrame:
+        soup = BeautifulSoup(html_content, 'html.parser')
+        main_content = soup.find('div', id='mw-content-text')
+
+        if not main_content:
+            return pd.DataFrame(columns=['word'])
+
+        for junk in main_content.find_all(['style', 'script']):
+            junk.decompose()
+
+        raw_text = main_content.get_text(separator=' ').lower()
+
+        extra_punctuation = "“”„”«»–—"
+        to_remove = punctuation.replace("'", "") + extra_punctuation
+
+        table = str.maketrans(to_remove, ' ' * len(to_remove))
+        clean_text = raw_text.translate(table)
+
+        words_list = clean_text.split()
+
+        filtered_words = [
+            word.strip("'") for word in words_list
+            if word.strip("'") and not word.isdigit() and len(word.strip("'")) > 1
+        ]
+        return pd.DataFrame(filtered_words, columns=['word'])
+
     def fetch_page_redirections(self, url: str) -> list[str]:
         pass
 
