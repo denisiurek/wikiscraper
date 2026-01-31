@@ -1,9 +1,13 @@
-from .base import WikiScraper
-from bs4 import BeautifulSoup
-import pandas as pd
-from io import StringIO
 import re
+from io import StringIO
 from string import punctuation
+from urllib.parse import unquote
+
+import pandas as pd
+from bs4 import BeautifulSoup
+
+from .base import WikiScraper
+
 
 class StardewScraper(WikiScraper):
     def __init__(self, config):
@@ -26,7 +30,6 @@ class StardewScraper(WikiScraper):
             raw_text = raw_text.strip()
             clean_text = raw_text.replace(" .", ".").replace(" '", "'")
             if len(raw_text) > 20:
-
                 return ' '.join(clean_text.split())
 
         raise ValueError("No suitable summary found.")
@@ -46,9 +49,9 @@ class StardewScraper(WikiScraper):
 
             index_col_param = 0 if is_first_col_header else None
             df_list = pd.read_html(
-                    StringIO(str(tag)),
-                    header=0,
-                    index_col=index_col_param
+                StringIO(str(tag)),
+                header=0,
+                index_col=index_col_param
             )
             if df_list:
                 dfs.append(df_list[0])
@@ -81,9 +84,50 @@ class StardewScraper(WikiScraper):
         ]
         return pd.DataFrame(filtered_words, columns=['word'])
 
-    def fetch_page_redirections(self, url: str) -> list[str]:
-        pass
+    def fetch_page_redirections(self, html_content: str) -> list[str]:
+        soup = BeautifulSoup(html_content, 'html.parser')
+        content_div = soup.find('div', {'id': 'mw-content-text'})
+        if not content_div:
+            return []
 
-    def get_clean_text(self, html_content: str) -> str:
-        pass
+        blocked_namespaces = { # ai generated blockers
+            'file', 'image', 'category', 'special', 'help', 'talk', 'user', 'user talk',
+            'template', 'template talk', 'mediawiki', 'mediawiki talk', 'module', 'module talk',
+            'portal', 'draft', 'timedtext', 'mailto', 'tel', 'javascript'
+        }
 
+        seen: set[str] = set()
+        out: list[str] = []
+
+        for a in content_div.find_all('a', href=True):
+            href = (a.get('href') or '').strip()
+            if not href or not href.startswith('/'):
+                continue
+
+            href_lower = href.lower()
+            if href_lower.startswith(('#', '/#', '/wiki/#', '//')):
+                continue
+
+            href = href.split('#', 1)[0].split('?', 1)[0]
+
+            candidate = href.lstrip('/')
+            if not candidate:
+                continue
+            candidate = candidate.split('/', 1)[0]
+            if not candidate:
+                continue
+
+            title = unquote(candidate).replace('_', ' ').strip()
+            if not title:
+                continue
+
+            if ':' in title:
+                ns = title.split(':', 1)[0].strip().lower()
+                if ns in blocked_namespaces:
+                    continue
+
+            if title not in seen:
+                seen.add(title)
+                out.append(title)
+
+        return out

@@ -1,10 +1,10 @@
+from pathlib import Path
+
+import pandas as pd
+
 from . import StardewScraper
 from . import WikiScraper
-from bs4 import BeautifulSoup
-import pandas as pd
-from io import StringIO
-import re
-from pathlib import Path
+
 
 class StardewFileScraper(WikiScraper):
     def __init__(self, config):
@@ -17,7 +17,7 @@ class StardewFileScraper(WikiScraper):
             return f.read()
 
     def _fetch_url(self, subpage: str) -> Path:
-        return Path("./local_page/"+subpage.strip().replace(" ", "_") + ".html")
+        return Path("./local_page/" + subpage.strip().replace(" ", "_") + ".html")
 
     def parse_summary(self, html_content: str) -> str:
         return self.scraper.parse_summary(html_content)
@@ -33,4 +33,3 @@ class StardewFileScraper(WikiScraper):
 
     def get_clean_text(self, html_content: str) -> str:
         return self.scraper.get_clean_text(html_content)
-

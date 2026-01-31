@@ -1,7 +1,9 @@
-import os
 import json
+import os
 from pathlib import Path
+
 from dotenv import load_dotenv
+
 
 class ConfigLoader:
     def __init__(self, config_path: str = "config.json", keys_path: str = ".env"):
@@ -10,13 +12,14 @@ class ConfigLoader:
         self.config = self._load()
         self._api_keys = self._load_api_keys()
 
-
     def _default(self) -> dict:
         return {
             "wiki_url": "https://stardewvalleywiki.com",
             "request_timeout": 10,
             "user_agent": "WikiScraper/1.0",
             "accept-language": "en-US,en;q=0.9",
+            "word_freq_lang": "en",
+            "json_path": "./word-counts.json",
             "mode": "stardew_normal",
             "is_debug": 0
         }
@@ -34,7 +37,6 @@ class ConfigLoader:
                 print(f"Warning: {self.path} contains invalid JSON. Using defaults.")
         return config
 
-
     def _load_api_keys(self) -> dict:
         load_dotenv()
         return {
@@ -42,7 +44,6 @@ class ConfigLoader:
             for key, value in os.environ.items()
             if key.endswith("API_KEY")
         }
-
 
     @property
     def wiki_url(self) -> str:
@@ -64,6 +65,15 @@ class ConfigLoader:
     @property
     def timeout(self) -> int:
         return self.config.get("request_timeout")
+
+    @property
+    def json_path(self) -> str:
+        return self.config.get("json_path")
+
+    @property
+    def word_freq_lang(self) -> str:
+        return self.config.get("word_freq_lang")
+
     @property
     def api_keys(self) -> dict:
         return self.config.get("api_keys", {})

@@ -3,6 +3,7 @@ from abc import ABC, abstractmethod
 import pandas as pd
 import requests
 
+
 class WikiScraper(ABC):
     def __init__(self, config):
         self.config = config
@@ -13,14 +14,13 @@ class WikiScraper(ABC):
         url = self._fetch_url(subpage)
 
         try:
-            response = self.session.get(url, timeout = self.config.timeout)
+            response = self.session.get(url, timeout=self.config.timeout)
             response.raise_for_status()
             return response.text
         except requests.exceptions.HTTPError:
             raise ValueError(f"Page not found: {url}")
         except requests.exceptions.RequestException as e:
             raise ConnectionError(f"Request error for {url}: {e}")
-
 
     @abstractmethod
     def _fetch_url(self, search_phrase: str) -> str:
@@ -31,9 +31,11 @@ class WikiScraper(ABC):
     def parse_summary(self, html_content: str) -> str:
 
         pass
+
     @abstractmethod
     def extract_all_words(self, html_content: str) -> pd.DataFrame:
         pass
+
     @abstractmethod
     def extract_tables(self, html_content: str) -> list:
 
@@ -44,7 +46,3 @@ class WikiScraper(ABC):
 
         pass
 
-    @abstractmethod
-    def get_clean_text(self, html_content: str) -> str:
-
-        pass
