@@ -10,30 +10,53 @@ class StardewScraper(WikiScraper):
 
     def _fetch_url(self, search_phrase: str) -> str:
         formatted_phrase = search_phrase.strip().replace(" ", "_")
-        return f"{self.base_url}/{formatted_phrase}"
+        return f"{self.config.wiki_url}/{formatted_phrase}"
 
     def parse_summary(self, html_content: str) -> str:
         soup = BeautifulSoup(html_content, 'html.parser')
 
         content_div = soup.find('div', {'id': 'mw-content-text'})
         if not content_div:
-            return "No content found."
+            raise ValueError("No content div found.")
 
         paragraphs = content_div.find_all("p")
         for p in paragraphs:
-            raw_text = p.get_text(" ", strip=True)
+            raw_text = p.get_text(" ")
+            raw_text = raw_text.strip()
             clean_text = raw_text.replace(" .", ".").replace(" '", "'")
             if len(raw_text) > 20:
 
                 return ' '.join(clean_text.split())
 
-        return "No summary paragraph found."
+        raise ValueError("No suitable summary found.")
 
-    def extract_tables(self, html_content: str) -> list:
-        pass
+    def extract_tables(self, html_content: str) -> list[pd.DataFrame]:
+        soup = BeautifulSoup(html_content, 'html.parser')
+        found_tags = soup.find_all('table', {'class': re.compile(r'wikitable')})
+
+        dfs = []
+        for tag in found_tags:
+            first_row = tag.find('tr')
+            is_first_col_header = False
+            if first_row:
+                first_cell = first_row.find(['td', 'th'])
+                if first_cell and first_cell.name == 'th':
+                    is_first_col_header = True
+
+            index_col_param = 0 if is_first_col_header else None
+            df_list = pd.read_html(
+                    StringIO(str(tag)),
+                    header=0,
+                    index_col=index_col_param
+            )
+            if df_list:
+                dfs.append(df_list[0])
+
+        return dfs
 
     def fetch_page_redirections(self, url: str) -> list[str]:
         pass
 
     def get_clean_text(self, html_content: str) -> str:
         pass
+

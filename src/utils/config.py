@@ -1,5 +1,4 @@
 import os
-
 import json
 from pathlib import Path
 from dotenv import load_dotenv
@@ -18,9 +17,9 @@ class ConfigLoader:
             "request_timeout": 10,
             "user_agent": "WikiScraper/1.0",
             "accept-language": "en-US,en;q=0.9",
-            "mode": "stardew_normal"
+            "mode": "stardew_normal",
+            "is_debug": False
         }
-
 
     def _load(self) -> dict:
 

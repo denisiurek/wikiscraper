@@ -2,10 +2,13 @@ import argparse
 import sys
 
 from scraper import StardewScraper
+from scraper import get_scraper_tool
 from utils import ConfigLoader
 
 #from scraper.stardew import StardewScraper
 #from analysis.text_analyzer import TextAnalyzer
+
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -24,7 +27,7 @@ def main():
         "--table",
         type=str,
         help="Extract tables from a given subpage to CSV. Usage: --table 'Golden Walnut' "
-             "(can be combined with --number)."
+             "(must be combined with --number)."
     )
 
     parser.add_argument(
@@ -53,12 +56,6 @@ def main():
         type=int,
         default=1,
         help="For --table: Specify which table index to extract (default: 1)."
-    )
-
-    parser.add_argument(
-        "--first-row-is-header",
-        action="store_true",
-        help="For --table: Treat the first row of the table as column headers."
     )
 
     parser.add_argument(
@@ -101,18 +98,28 @@ def main():
     config = ConfigLoader()
 
     args = parser.parse_args()
-    if config.mode == 'stardew_normal':
-        scraper = StardewScraper(config)
+    scraper = get_scraper_tool(config)
 
     if args.summary:
         try:
             print(scraper.parse_summary(scraper.fetch_page(args.summary)))
         except Exception as e:
             print(f"Error processing summary: {e}")
+
     elif args.table:
         try:
-            raise NotImplementedError("table not implemented")
+            if args.number < 1:
+                raise ValueError("Table number must be at least 1.")
 
+            tables = scraper.extract_tables(scraper.fetch_page(args.table))
+
+            if args.number > tables.size:
+                raise ValueError("Table number exceeds number of tables.")
+
+            table = tables[args.number - 1]
+            table.to_csv(f"{args.table}_{args.number}.csv")
+
+            print(f"Table saved to {args.table}_{args.number}.csv")
 
 
         except Exception as e:
