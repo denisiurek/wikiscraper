@@ -17,7 +17,8 @@ class ConfigLoader:
             "wiki_url": "https://stardewvalleywiki.com",
             "request_timeout": 10,
             "user_agent": "WikiScraper/1.0",
-            "accept-language": "en-US,en;q=0.9"
+            "accept-language": "en-US,en;q=0.9",
+            "mode": "stardew_normal"
         }
 
 
@@ -53,6 +54,13 @@ class ConfigLoader:
         return {"User-Agent": self.config.get("user_agent"),
                 "Accept-Language": self.config.get("accept_language")}
 
+    @property
+    def mode(self) -> str:
+        return self.config.get("mode")
+
+    @property
+    def timeout(self) -> int:
+        return self.config.get("request_timeout")
     @property
     def api_keys(self) -> dict:
         return self.config.get("api_keys", {})

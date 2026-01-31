@@ -3,13 +3,13 @@ import requests
 from bs4 import BeautifulSoup
 
 class WikiScraper(ABC):
-    def __init__(self, base_url: str, headers: dict, timeout: int = 10, api_keys: dict = {}):
-        self.timeout = timeout
-        self.base_url = base_url
-        self.headers = headers
+    def __init__(self, config):
+        self.timeout = config.timeout
+        self.base_url = config.wiki_url
+        self.headers = config.headers
         self.session = requests.Session()
-        self.session.headers.update(headers)
-        self.api_keys = api_keys
+        self.session.headers.update(config.headers)
+        self.api_keys = config.api_keys
 
     def fetch_page(self, subpage: str) -> str:
         url = self._fetch_url(subpage)

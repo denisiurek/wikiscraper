@@ -1,6 +1,9 @@
 import argparse
 import sys
-from utils.config import ConfigLoader
+
+from scraper import StardewScraper
+from utils import ConfigLoader
+
 #from scraper.stardew import StardewScraper
 #from analysis.text_analyzer import TextAnalyzer
 
@@ -98,11 +101,12 @@ def main():
     config = ConfigLoader()
 
     args = parser.parse_args()
+    if config.mode == 'stardew_normal':
+        scraper = StardewScraper(config)
 
     if args.summary:
         try:
-            raise NotImplementedError("summary not implemented")
-
+            print(scraper.parse_summary(scraper.fetch_page(args.summary)))
         except Exception as e:
             print(f"Error processing summary: {e}")
     elif args.table:
