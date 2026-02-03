@@ -5,7 +5,7 @@ import pandas as pd
 from matplotlib import pyplot as plt
 from wordfreq import top_n_list
 from wordfreq import word_frequency
-
+import seaborn as sns
 
 class TextAnalyzer:
     @staticmethod
@@ -60,37 +60,6 @@ class TextAnalyzer:
 
         return df_final[['word', 'wiki freq', 'lang freq']].head(count)
 
-    @staticmethod
-    def plot_rel_word_freq(df: pd.DataFrame, chart_path: str):
-        words = df['word'].tolist()
+    #@staticmethod
+   # def plot_rel_word_freq(df: pd.DataFrame, chart_path: str):
 
-        data_to_plot = {'Article': df['wiki freq'].fillna(0).tolist(),
-                        'Language': df['lang freq'].fillna(0).tolist(), }
-
-        x = np.arange(len(words))
-        width = 0.35
-        multiplier = 0
-
-        fig, ax = plt.subplots(figsize=(12, 7), layout='constrained')
-
-        for label, measurement in data_to_plot.items():
-            offset = width * multiplier
-
-            rects = ax.bar(x + offset, measurement, width, label=label)
-
-            ax.bar_label(rects, padding=3, fmt='%.2f', fontsize=12)
-            multiplier += 1
-
-        ax.set_ylabel('Normalized Frequency (0.0 - 1.0)')
-        ax.set_title('Relative Word Frequency: Article vs. General Language')
-
-        ax.set_xticks(x + width / 2, words)
-        ax.tick_params(axis='x', rotation=45)
-
-        ax.legend(loc='upper right', ncols=2)
-
-        ax.set_ylim(0, 1.2)
-
-        plt.savefig(chart_path, dpi=600)
-        plt.close()
-        print(f"Chart saved to {chart_path}")
