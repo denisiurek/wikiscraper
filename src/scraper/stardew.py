@@ -4,6 +4,7 @@ from string import punctuation
 from urllib.parse import unquote
 
 import pandas as pd
+import requests
 from bs4 import BeautifulSoup
 
 from .base import WikiScraper
@@ -15,7 +16,15 @@ class StardewScraper(WikiScraper):
 
     def _fetch_url(self, search_phrase: str) -> str:
         formatted_phrase = search_phrase.strip().replace(" ", "_")
-        return f"{self.config.wiki_url}/{formatted_phrase}"
+        url = f"{self.config.wiki_url}/{formatted_phrase}"
+        response = requests.get(url)
+        if response.status_code < 400:
+            return url
+        else:
+            try:
+                return self._fallback_fetch_url(search_phrase)
+            except Exception as e:
+                raise ValueError(f"Failed to fetch URL for '{search_phrase}': {e}")
 
     def parse_summary(self, html_content: str) -> str:
         soup = BeautifulSoup(html_content, 'html.parser')
@@ -131,3 +140,25 @@ class StardewScraper(WikiScraper):
                 out.append(title)
 
         return out
+
+
+    def _google_api_handle(self, search_phrase: str) -> str:
+        url = "https://www.googleapis.com/customsearch/v1"
+        params = {
+            'q': search_phrase,
+            'key': self.config.api_keys()["GOOGLE_API_KEY"],
+            'cx': self.config.api_keys()["GOOGLE_CSE_ID"],
+            'num': 1
+        }
+        response = requests.get(url, params=params)
+        results = response.json()
+        if 'items' in results and len(results['items']) > 0:
+            return results['items'][0]['link']
+        else:
+            raise ValueError("No search results found for the given phrase.")
+
+    def _fallback_fetch_url(self, search_phrase: str) -> str:
+        try:
+            return self._google_api_handle(search_phrase)
+        except Exception as e:
+            print(f"Google API search failed: {e}")
