@@ -76,7 +76,7 @@ class ConfigLoader:
 
     @property
     def api_keys(self) -> dict:
-        return self.config.get("api_keys", {})
+        return self._api_keys
 
     def __repr__(self):
 

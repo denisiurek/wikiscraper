@@ -11,14 +11,11 @@ class WikiScraper(ABC):
         self.session.headers.update(config.headers)
 
     def fetch_page(self, subpage: str) -> str:
-        url = self._fetch_url(subpage)
-
         try:
+            url = self._fetch_url(subpage)
             response = self.session.get(url, timeout=self.config.timeout)
             response.raise_for_status()
             return response.text
-        except requests.exceptions.HTTPError:
-            raise ValueError(f"Page not found: {url}")
         except requests.exceptions.RequestException as e:
             raise ConnectionError(f"Request error for {url}: {e}")
 

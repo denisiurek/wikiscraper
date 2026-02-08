@@ -6,5 +6,5 @@
   "word_freq_lang": "en",
   "json_path": "./word-counts.json",
   "mode": "stardew_normal",
-  "is_debug": 0
+  "is_debug": 1
 }
