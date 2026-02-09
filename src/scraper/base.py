@@ -21,12 +21,10 @@ class WikiScraper(ABC):
 
     @abstractmethod
     def _fetch_url(self, search_phrase: str) -> str:
-
         pass
 
     @abstractmethod
     def parse_summary(self, html_content: str) -> str:
-
         pass
 
     @abstractmethod
@@ -35,10 +33,8 @@ class WikiScraper(ABC):
 
     @abstractmethod
     def extract_tables(self, html_content: str) -> list:
-
         pass
 
     @abstractmethod
     def fetch_page_redirections(self, url: str) -> list[str]:
-
         pass

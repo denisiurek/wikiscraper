@@ -142,23 +142,29 @@ class StardewScraper(WikiScraper):
         return out
 
 
-    def _google_api_handle(self, search_phrase: str) -> str:
-        url = "https://www.googleapis.com/customsearch/v1"
-        params = {
-            'q': search_phrase,
-            'key': self.config.api_keys()["GOOGLE_API_KEY"],
-            'cx': self.config.api_keys()["GOOGLE_CSE_ID"],
-            'num': 1
+    def _google_api_handler(self, search_phrase: str) -> str:
+        # Using Serper.dev API to search for the page URL on the wiki
+        # Google deprecated custom search api for new clients
+        url = "https://google.serper.dev/search"
+        search_phrase = f"{search_phrase} site:{self.config.wiki_url}"
+        payload = {
+            "q": search_phrase
         }
-        response = requests.get(url, params=params)
+        headers = {
+            'X-API-KEY': self.config.api_keys["X-API-KEY"],
+            'Content-Type': 'application/json'
+        }
+        response = requests.request("POST", url, headers=headers, json=payload)
+
         results = response.json()
-        if 'items' in results and len(results['items']) > 0:
-            return results['items'][0]['link']
+        if 'organic' in results and len(results['organic']) > 0:
+            print(f"Site not found directly, used google search and got item {results['organic'][0]['title']}, verify validity")
+            return results['organic'][0]['link']
         else:
-            raise ValueError("No search results found for the given phrase.")
+            raise ValueError("No site found and fallback search failed.")
 
     def _fallback_fetch_url(self, search_phrase: str) -> str:
         try:
-            return self._google_api_handle(search_phrase)
+            return self._google_api_handler(search_phrase)
         except Exception as e:
             print(f"Google API search failed: {e}")
