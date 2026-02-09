@@ -203,7 +203,8 @@ pyrightconfig.json
 
 # Built Visual Studio Code Extensions
 *.vsix
-
+*.png
+*.html
 ### VisualStudioCode Patch ###
 # Ignore all local history of files
 .history

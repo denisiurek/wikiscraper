@@ -16,8 +16,7 @@ class ConfigLoader:
         return {
             "wiki_url": "https://stardewvalleywiki.com",
             "request_timeout": 10,
-            "user_agent": "WikiScraper/1.0",
-            "accept-language": "en-US,en;q=0.9",
+            "user_agent": "WikiScraperbot/0.1.0",
             "word_freq_lang": "en",
             "json_path": "./word-counts.json",
             "mode": "stardew_normal",
@@ -42,7 +41,7 @@ class ConfigLoader:
         return {
             key: value
             for key, value in os.environ.items()
-            if key.endswith("API_KEY")
+            if key.endswith("KEY")
         }
 
     @property
@@ -51,8 +50,7 @@ class ConfigLoader:
 
     @property
     def headers(self) -> dict:
-        return {"User-Agent": self.config.get("user_agent"),
-                "Accept-Language": self.config.get("accept_language")}
+        return {"User-Agent": self.config.get("user_agent")}
 
     @property
     def is_debug(self) -> bool:

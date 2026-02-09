@@ -30,6 +30,3 @@ class StardewFileScraper(WikiScraper):
 
     def fetch_page_redirections(self, html_content: str) -> list[str]:
         return self.scraper.fetch_page_redirections(html_content)
-
-    def get_clean_text(self, html_content: str) -> str:
-        return self.scraper.get_clean_text(html_content)
