@@ -1,11 +1,12 @@
 import os
+from pathlib import Path
 
-import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
 from wordfreq import top_n_list
 from wordfreq import word_frequency
 import seaborn as sns
+
 
 class TextAnalyzer:
     @staticmethod
@@ -15,51 +16,57 @@ class TextAnalyzer:
         return frequency_table
 
     @staticmethod
-    def update_word_counts_json(word_counts: pd.DataFrame, file_name: str):
-        if os.path.exists(file_name):
-            word_counts = pd.concat([pd.read_json(file_name), word_counts])
+    def update_word_counts_json(word_counts: pd.DataFrame, file_path: Path):
+        if os.path.exists(file_path):
+            word_counts = pd.concat([pd.read_json(file_path), word_counts])
             word_counts = word_counts.groupby('word', as_index=False).sum()
             word_counts = word_counts.sort_values(by='wiki freq', ascending=False)
-            word_counts.to_json(file_name, orient="records")
+            word_counts.to_json(file_path, orient="records")
         else:
-            word_counts.to_json(file_name, orient="records")
+            word_counts.to_json(file_path, orient="records")
         return
 
     @staticmethod
-    def analyze_rel_word_freq(mode: str, count: int, lang: str, json_path: str) -> pd.DataFrame:
-        if not os.path.exists(json_path):
-            raise FileNotFoundError("File not found: " + json_path)
+    def analyze_rel_word_freq(mode: str, count: int, lang: str, json_path: Path) -> pd.DataFrame:
+        path = Path(json_path)
+        if not path.exists():
+            raise FileNotFoundError(f"File not found: {path}")
 
-        df_article = pd.read_json(json_path)
-        df_article = df_article[['word', 'wiki freq']]
-        if mode == "article":
-
-            df_article['lang_freq'] = df_article['word'].apply(lambda x: word_frequency(x, lang))
-            df_final = df_article.copy()
-        else:
-            top_words = top_n_list(lang, 1000)
-            df_lang = pd.DataFrame(top_words, columns=['word'])
-            df_lang['lang_freq'] = df_lang['word'].apply(lambda x: word_frequency(x, lang))
-
-            df_final = pd.merge(df_lang, df_article, on='word', how='left')
-
-        if not df_final['wiki freq'].dropna().empty:
-            df_final['wiki freq'] = df_final['wiki freq'] / df_final['wiki freq'].max()
-        else:
-            df_final['wiki freq'] = df_final['wiki freq']
-
-        if not df_final['lang_freq'].dropna().empty:
-            df_final['lang freq'] = df_final['lang_freq'] / df_final['lang_freq'].max()
-        else:
-            df_final['lang freq'] = df_final['lang_freq']
+        df_json = pd.read_json(path)
+        df_json = df_json[['word', 'wiki freq']].set_index('word')
 
         if mode == "article":
-            df_final = df_final.sort_values(by='wiki freq', ascending=False)
+            target_words = df_json.index.tolist()
         else:
-            df_final = df_final.sort_values(by='lang_freq', ascending=False)
+            target_words = top_n_list(lang, 1000)
 
-        return df_final[['word', 'wiki freq', 'lang freq']].head(count)
+        df = pd.DataFrame({'word': target_words})
 
-    #@staticmethod
-   # def plot_rel_word_freq(df: pd.DataFrame, chart_path: str):
+        df['wiki freq'] = df['word'].map(df_json['wiki freq']).fillna(0)
+        df['lang freq'] = [word_frequency(w, lang) for w in df['word']]
 
+        for col in ['wiki freq', 'lang freq']:
+            max_val = df[col].max()
+            if max_val > 0:
+                df[col] = df[col] / max_val
+
+        sort_column = 'wiki freq' if mode == "article" else 'lang freq'
+
+        return df.sort_values(by=sort_column, ascending=False).head(count).reset_index(drop=True)
+
+    @staticmethod
+    def plot_rel_word_freq(df: pd.DataFrame, chart_path: Path):
+        df_melted = df.melt(id_vars=['word'], value_vars=['wiki freq', 'lang freq'],
+                            var_name='source', value_name='frequency')
+
+        sns.set_theme(style="whitegrid")
+        plt.figure(figsize=(10, 6))
+
+        ax = sns.barplot(x="word", y="frequency", hue="source", data=df_melted)
+
+        ax.tick_params(axis='x', rotation=55)
+
+        plt.title("Relative Word Frequency: Wiki vs Language")
+        plt.tight_layout()
+        plt.savefig(chart_path)
+        plt.close()

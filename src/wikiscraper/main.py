@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import argparse
 import sys
+from pathlib import Path
 from time import sleep
 
 from analysis import TextAnalyzer
-from scraper import get_scraper_tool
+from scraper import WikiScraper
 from utils import ConfigLoader
 
 
@@ -97,24 +98,48 @@ def setup_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def crawl_subpages(start_subpage: str, depth: int, wait: int, scraper) -> None:
+def crawl_subpages(start_subpage: str, depth: int, wait: int, scraper: WikiScraper, word_counts_path: Path,
+                   limit: int = 0) -> None:
     visited, to_visit = set(), {start_subpage}
+
     for i in range(depth):
         print(f"Visited {len(visited)} pages")
         print(f"iteration {i + 1}:")
+
+        if 0 < limit <= len(visited):
+            break
+
         current_batch = to_visit - visited
         to_visit = set()
+
         for page in current_batch:
+            if 0 < limit <= len(visited):
+                return
+
             print(f"Fetching {page}")
-            html = scraper.fetch_page(page)
-            words = scraper.extract_all_words(html)
-            TextAnalyzer.update_word_counts_json(
-                TextAnalyzer.sum_word_occurrences(words),
-                "word-counts.json",
-            )
-            visited.add(page)
-            to_visit.update(scraper.fetch_page_redirections(html))
-            sleep(wait)
+            try:
+                html = scraper.fetch_page(page)
+                words = scraper.extract_all_words(html)
+                TextAnalyzer.update_word_counts_json(
+                    TextAnalyzer.sum_word_occurrences(words),
+                    word_counts_path,
+                )
+                visited.add(page)
+                to_visit.update(scraper.fetch_page_redirections(html))
+                sleep(wait)
+            except Exception as e:
+                print(f"Error processing {page}: {e}")
+
+
+def get_scraper_tool(config):
+    if config.mode == "stardew_normal":
+        from scraper import StardewScraper
+        return StardewScraper(config)
+    elif config.mode == "stardew_file":
+        from scraper import StardewFileScraper
+        return StardewFileScraper(config)
+    else:
+        raise ValueError(f"Invalid mode: {config.mode}")
 
 
 def main() -> None:
@@ -127,7 +152,7 @@ def main() -> None:
     if args.summary:
         try:
             print(scraper.parse_summary(scraper.fetch_page(args.summary)))
-        except Exception as e:  # pragma: no cover
+        except Exception as e:
             print(f"Error processing summary: {e}")
 
     elif args.table:
@@ -146,17 +171,16 @@ def main() -> None:
             print(f"Table saved to {args.table}_{args.number}.csv")
             print(TextAnalyzer.sum_word_occurrences(table))
 
-        except Exception as e:  # pragma: no cover
+        except Exception as e:
             print(f"Error processing table: {e}")
 
     elif args.count_words:
         try:
             words = scraper.extract_all_words(scraper.fetch_page(args.count_words))
             word_counts = TextAnalyzer.sum_word_occurrences(words)
-            TextAnalyzer.update_word_counts_json(word_counts, "word-counts.json")
-            print("Word counts updated in word-counts.json")
+            TextAnalyzer.update_word_counts_json(word_counts, config.json_path)
 
-        except Exception as e:  # pragma: no cover
+        except Exception as e:
             print(f"Error counting words: {e}")
 
     elif args.analyze_relative_word_frequency:
@@ -176,7 +200,7 @@ def main() -> None:
 
     elif args.auto_count_words:
         try:
-            crawl_subpages(args.auto_count_words, args.depth, args.wait, scraper)
+            crawl_subpages(args.auto_count_words, args.depth, args.wait, scraper, config.json_path)
         except Exception as e:  # pragma: no cover
             print(f"Error in auto word counting: {e}")
 
@@ -185,4 +209,4 @@ def main() -> None:
         sys.exit(1)
 
 
-__all__ = ["main", "crawl_subpages", "setup_parser"]
+__all__ = ["main", "crawl_subpages", "setup_parser", "get_scraper_tool"]

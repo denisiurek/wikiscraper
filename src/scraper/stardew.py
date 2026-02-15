@@ -35,10 +35,9 @@ class StardewScraper(WikiScraper):
 
         paragraphs = content_div.find_all("p")
         for p in paragraphs:
-            raw_text = p.get_text(" ")
-            raw_text = raw_text.strip()
-            clean_text = raw_text.replace(" .", ".").replace(" '", "'")
-            if len(raw_text) > 20:
+            raw_text = p.get_text(separator=" ", strip=True)
+            clean_text = raw_text.replace(" .", ".").replace(" '", "'").replace(" ,", ",")
+            if len(raw_text) > 30:
                 return ' '.join(clean_text.split())
 
         raise ValueError("No suitable summary found.")
@@ -95,52 +94,44 @@ class StardewScraper(WikiScraper):
 
     def fetch_page_redirections(self, html_content: str) -> list[str]:
         soup = BeautifulSoup(html_content, 'html.parser')
-        content_div = soup.find('div', {'id': 'mw-content-text'})
+
+        content_div = soup.select_one('div#mw-content-text')
         if not content_div:
             return []
 
-        blocked_namespaces = {  # ai generated blockers
+        blocked_namespaces = { # some are unnecessary to block, but this is a good starting point imho
             'file', 'image', 'category', 'special', 'help', 'talk', 'user', 'user talk',
-            'template', 'template talk', 'mediawiki', 'mediawiki talk', 'module', 'module talk',
-            'portal', 'draft', 'timedtext', 'mailto', 'tel', 'javascript', 'Datei'
+            'template', 'template talk', 'mediawiki', 'mediawiki talk', 'module',
+            'module talk', 'portal', 'draft', 'timedtext', 'mailto', 'tel',
+            'javascript', 'datei'
         }
 
-        seen: set[str] = set()
-        out: list[str] = []
+        def process_href(href):
+            if href.lower().startswith(('/#', '/wiki/#', '//')):
+                return None
 
-        for a in content_div.find_all('a', href=True):
-            href = (a.get('href') or '').strip()
-            if not href or not href.startswith('/'):
-                continue
+            path = href.split('#')[0].split('?')[0].lstrip('/')
+            if not path:
+                return None
 
-            href_lower = href.lower()
-            if href_lower.startswith(('#', '/#', '/wiki/#', '//', '/datei')):
-                continue
-
-            href = href.split('#', 1)[0].split('?', 1)[0]
-
-            candidate = href.lstrip('/')
-            if not candidate:
-                continue
-            candidate = candidate.split('/', 1)[0]
-            if not candidate:
-                continue
-
+            candidate = path.split('/', 1)[0]
             title = unquote(candidate).replace('_', ' ').strip()
+
             if not title:
-                continue
+                return None
 
             if ':' in title:
-                ns = title.split(':', 1)[0].strip().lower()
+                ns = title.split(':', 1)[0].lower()
                 if ns in blocked_namespaces:
-                    continue
+                    return None
 
-            if title not in seen:
-                seen.add(title)
-                out.append(title)
+            return title
 
-        return out
+        raw_links = (a['href'] for a in content_div.select('a[href^="/"]'))
 
+        titles = (process_href(href) for href in raw_links)
+
+        return list(dict.fromkeys(t for t in titles if t is not None))
 
     def _google_api_handler(self, search_phrase: str) -> str:
         # Using Serper.dev API to search for the page URL on the wiki
@@ -158,12 +149,13 @@ class StardewScraper(WikiScraper):
 
         results = response.json()
         if 'organic' in results and len(results['organic']) > 0:
-            print(f"Site not found directly, used google search and got item {results['organic'][0]['title']}, verify validity")
+            print(
+                f"Site not found directly, used google search and got item {results['organic'][0]['title']}, verify validity")
             return results['organic'][0]['link']
         else:
             raise ValueError("No site found and fallback search failed.")
 
-    def _fallback_fetch_url(self, search_phrase: str) -> str:
+    def _fallback_fetch_url(self, search_phrase: str) -> str | None:
         try:
             return self._google_api_handler(search_phrase)
         except Exception as e:

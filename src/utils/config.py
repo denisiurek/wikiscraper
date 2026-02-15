@@ -5,27 +5,36 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 
-class ConfigLoader:
-    def __init__(self, config_path: str = "config.json", keys_path: str = ".env"):
-        self.path = Path(config_path)
-        self.keys_path = Path(keys_path)
-        self.config = self._load()
-        self._api_keys = self._load_api_keys()
+def _load_api_keys(keys_path: Path) -> dict:
+    load_dotenv(keys_path)
+    return {
+        key: value
+        for key, value in os.environ.items()
+        if key.endswith("KEY")
+    }
 
-    def _default(self) -> dict:
-        return {
-            "wiki_url": "https://stardewvalleywiki.com",
-            "request_timeout": 10,
-            "user_agent": "WikiScraperbot/0.1.0",
-            "word_freq_lang": "en",
-            "json_path": "./word-counts.json",
-            "mode": "stardew_normal",
-            "is_debug": 0
-        }
+
+def _default_config() -> dict:
+    return {
+        "wiki_url": "https://stardewvalleywiki.com",
+        "user_agent": "WikiScraper/0.1.0",
+        "word_freq_lang": "en",
+        "json_path": "./word-counts.json",
+        "mode": "stardew_normal",
+        "is_debug": 0
+    }
+
+
+class ConfigLoader:
+    def __init__(self, config_path: Path = Path("./config.json"), keys_path: Path = Path("./env")):
+        self.path = Path(config_path).expanduser()
+        self.base_dir = self.path.resolve().parent if self.path.exists() else Path.cwd().resolve()
+        self.config = self._load()
+        self._api_keys = _load_api_keys(keys_path)
 
     def _load(self) -> dict:
 
-        config = self._default()
+        config = _default_config()
 
         if self.path.exists():
             try:
@@ -34,15 +43,17 @@ class ConfigLoader:
                     config.update(user_config)
             except json.JSONDecodeError:
                 print(f"Warning: {self.path} contains invalid JSON. Using defaults.")
+        else:
+            print(f"Warning: {self.path} not found. Using defaults.")
         return config
 
-    def _load_api_keys(self) -> dict:
-        load_dotenv()
-        return {
-            key: value
-            for key, value in os.environ.items()
-            if key.endswith("KEY")
-        }
+    def _resolve_path(self, value: str | os.PathLike | None) -> Path:
+        if value is None:
+            return self.base_dir
+        p = Path(value).expanduser()
+        if p.is_absolute():
+            return p
+        return (self.base_dir / p).resolve()
 
     @property
     def wiki_url(self) -> str:
@@ -65,8 +76,8 @@ class ConfigLoader:
         return self.config.get("request_timeout")
 
     @property
-    def json_path(self) -> str:
-        return self.config.get("json_path")
+    def json_path(self) -> Path:
+        return self._resolve_path(self.config.get("json_path"))
 
     @property
     def word_freq_lang(self) -> str:
@@ -76,13 +87,6 @@ class ConfigLoader:
     def api_keys(self) -> dict:
         return self._api_keys
 
-    def __repr__(self):
-
-        masked_keys = {}
-        for service, key in self._api_keys.items():
-            if key:
-                masked_keys[service] = f"{key[:4]}...******"
-            else:
-                masked_keys[service] = "Missing key"
-
-        return f"<Config = {self.config}, ConfigLoader keys = {masked_keys}>"
+    @property
+    def html_path(self) -> Path:
+        return self._resolve_path(self.config.get("html_path"))

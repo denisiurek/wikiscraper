@@ -204,11 +204,10 @@ pyrightconfig.json
 # Built Visual Studio Code Extensions
 *.vsix
 *.png
-*.html
 ### VisualStudioCode Patch ###
 # Ignore all local history of files
 .history
 .ionide
 
 # End of https://www.toptal.com/developers/gitignore/api/python,linux,jupyter,visualstudiocode
-/src/word-counts.json
+/word-counts.json

@@ -1,7 +1,7 @@
 from analysis import TextAnalyzer
-from scraper import StardewFileScraper, StardewScraper, WikiScraper, get_scraper_tool
+from scraper import StardewFileScraper, StardewScraper, WikiScraper
 from utils import ConfigLoader
-from .main import crawl_subpages, main, setup_parser
+from .main import crawl_subpages, main, setup_parser, get_scraper_tool
 
 __all__ = [
     "main",

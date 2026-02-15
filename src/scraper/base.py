@@ -17,7 +17,7 @@ class WikiScraper(ABC):
             response.raise_for_status()
             return response.text
         except requests.exceptions.RequestException as e:
-            raise ConnectionError(f"Request error for {url}: {e}")
+            raise ConnectionError(f"Request error for {subpage}: {e}")
 
     @abstractmethod
     def _fetch_url(self, search_phrase: str) -> str:
