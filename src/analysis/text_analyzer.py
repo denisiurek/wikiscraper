@@ -16,7 +16,7 @@ class TextAnalyzer:
         return frequency_table
 
     @staticmethod
-    def update_word_counts_json(word_counts: pd.DataFrame, file_path: Path):
+    def update_word_counts_json(word_counts: pd.DataFrame, file_path: Path) -> None:
         if os.path.exists(file_path):
             word_counts = pd.concat([pd.read_json(file_path), word_counts])
             word_counts = word_counts.groupby('word', as_index=False).sum()
@@ -24,7 +24,6 @@ class TextAnalyzer:
             word_counts.to_json(file_path, orient="records")
         else:
             word_counts.to_json(file_path, orient="records")
-        return
 
     @staticmethod
     def analyze_rel_word_freq(mode: str, count: int, lang: str, json_path: Path) -> pd.DataFrame:

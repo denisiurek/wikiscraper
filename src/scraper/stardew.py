@@ -11,20 +11,17 @@ from .base import WikiScraper
 
 
 class StardewScraper(WikiScraper):
-    def __init__(self, config):
-        super().__init__(config)
-
     def _fetch_url(self, search_phrase: str) -> str:
         formatted_phrase = search_phrase.strip().replace(" ", "_")
         url = f"{self.config.wiki_url}/{formatted_phrase}"
-        response = requests.get(url)
+        response = requests.get(url, timeout=self.config.timeout)
         if response.status_code < 400:
             return url
-        else:
-            try:
-                return self._fallback_fetch_url(search_phrase)
-            except Exception as e:
-                raise ValueError(f"Failed to fetch URL for '{search_phrase}': {e}")
+
+        try:
+            return self._fallback_fetch_url(search_phrase)
+        except (requests.RequestException, ValueError) as e:
+            raise ValueError(f"Failed to fetch URL for '{search_phrase}': {e}") from e
 
     def parse_summary(self, html_content: str) -> str:
         soup = BeautifulSoup(html_content, 'html.parser')
@@ -93,20 +90,39 @@ class StardewScraper(WikiScraper):
         return pd.DataFrame(filtered_words, columns=['word'])
 
     def fetch_page_redirections(self, html_content: str) -> list[str]:
+        # 'url' here actually contains the HTML content; name kept to match base class signature.
         soup = BeautifulSoup(html_content, 'html.parser')
 
         content_div = soup.select_one('div#mw-content-text')
         if not content_div:
             return []
 
-        blocked_namespaces = { # some are unnecessary to block, but this is a good starting point imho
-            'file', 'image', 'category', 'special', 'help', 'talk', 'user', 'user talk',
-            'template', 'template talk', 'mediawiki', 'mediawiki talk', 'module',
-            'module talk', 'portal', 'draft', 'timedtext', 'mailto', 'tel',
-            'javascript', 'datei'
+        blocked_namespaces = {
+            # some are unnecessary to block, but this is a good starting point
+            'file',
+            'image',
+            'category',
+            'special',
+            'help',
+            'talk',
+            'user',
+            'user talk',
+            'template',
+            'template talk',
+            'mediawiki',
+            'mediawiki talk',
+            'module',
+            'module talk',
+            'portal',
+            'draft',
+            'timedtext',
+            'mailto',
+            'tel',
+            'javascript',
+            'datei',
         }
 
-        def process_href(href):
+        def process_href(href: str) -> str | None:
             if href.lower().startswith(('/#', '/wiki/#', '//')):
                 return None
 
@@ -116,7 +132,6 @@ class StardewScraper(WikiScraper):
 
             candidate = path.split('/', 1)[0]
             title = unquote(candidate).replace('_', ' ').strip()
-
             if not title:
                 return None
 
@@ -128,35 +143,37 @@ class StardewScraper(WikiScraper):
             return title
 
         raw_links = (a['href'] for a in content_div.select('a[href^="/"]'))
-
         titles = (process_href(href) for href in raw_links)
-
         return list(dict.fromkeys(t for t in titles if t is not None))
 
     def _google_api_handler(self, search_phrase: str) -> str:
         # Using Serper.dev API to search for the page URL on the wiki
-        # Google deprecated custom search api for new clients
         url = "https://google.serper.dev/search"
-        search_phrase = f"{search_phrase} site:{self.config.wiki_url}"
-        payload = {
-            "q": search_phrase
-        }
+        query = f"{search_phrase} site:{self.config.wiki_url}"
+        payload = {"q": query}
         headers = {
             'X-API-KEY': self.config.api_keys["X-API-KEY"],
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
         }
-        response = requests.request("POST", url, headers=headers, json=payload)
+        response = requests.request(
+            "POST",
+            url,
+            headers=headers,
+            json=payload,
+            timeout=self.config.timeout,
+        )
 
         results = response.json()
-        if 'organic' in results and len(results['organic']) > 0:
+        organic = results.get('organic')
+        if organic:
+            first_title = organic[0].get('title', '<unknown>')
             print(
-                f"Site not found directly, used google search and got item {results['organic'][0]['title']}, verify validity")
-            return results['organic'][0]['link']
-        else:
-            raise ValueError("No site found and fallback search failed.")
+                "Site not found directly, used google search and got item "
+                f"{first_title}, verify validity"
+            )
+            return organic[0]['link']
 
-    def _fallback_fetch_url(self, search_phrase: str) -> str | None:
-        try:
-            return self._google_api_handler(search_phrase)
-        except Exception as e:
-            print(f"Google API search failed: {e}")
+        raise ValueError("No site found and fallback search failed.")
+
+    def _fallback_fetch_url(self, search_phrase: str) -> str:
+        return self._google_api_handler(search_phrase)

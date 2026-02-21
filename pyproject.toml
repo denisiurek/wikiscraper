@@ -16,7 +16,6 @@ dependencies = [
     "notebook>=7.5.3",
     "pandas>=3.0.0",
     "pip>=26.0.1",
-    "pytest>=9.0.2",
     "python-dotenv>=1.2.1",
     "requests>=2.32.5",
     "seaborn>=0.13.2",
@@ -44,4 +43,7 @@ package-dir = { "" = "src" }
 where = ["src"]
 
 [dependency-groups]
-dev = []
+dev = [
+    "pylint>=4.0.5",
+    "pytest>=9.0.2",
+]

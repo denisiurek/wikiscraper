@@ -17,7 +17,7 @@ class WikiScraper(ABC):
             response.raise_for_status()
             return response.text
         except requests.exceptions.RequestException as e:
-            raise ConnectionError(f"Request error for {subpage}: {e}")
+            raise ConnectionError(f"Request error for {subpage}: {e}") from e
 
     @abstractmethod
     def _fetch_url(self, search_phrase: str) -> str:
@@ -36,5 +36,5 @@ class WikiScraper(ABC):
         pass
 
     @abstractmethod
-    def fetch_page_redirections(self, url: str) -> list[str]:
+    def fetch_page_redirections(self, html_content: str) -> list[str]:
         pass
