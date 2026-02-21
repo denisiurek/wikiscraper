@@ -208,6 +208,7 @@ pyrightconfig.json
 # Ignore all local history of files
 .history
 .ionide
-
+*.html
 # End of https://www.toptal.com/developers/gitignore/api/python,linux,jupyter,visualstudiocode
-/word-counts.json
+*/word-counts.json
+*/language_analysis/offwiki_texts/*.txt
