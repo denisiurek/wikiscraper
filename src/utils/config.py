@@ -26,7 +26,7 @@ def _default_config() -> dict:
 
 
 class ConfigLoader:
-    def __init__(self, config_path: Path = Path("./config.json"), keys_path: Path = Path("./env")):
+    def __init__(self, config_path: Path = Path("./config.json"), keys_path: Path = Path("./.env")):
         self.path = Path(config_path).expanduser()
         self.base_dir = self.path.resolve().parent if self.path.exists() else Path.cwd().resolve()
         self.config = self._load()

@@ -1,5 +1,5 @@
 from .src import ConfigLoader
-# noinspection SpellCheckingInspection
+
 from .src import (
     WikiScraper,
     StardewScraper,
